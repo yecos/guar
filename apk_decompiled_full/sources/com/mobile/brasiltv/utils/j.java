@@ -1,0 +1,22 @@
+package com.mobile.brasiltv.utils;
+
+import java.io.Closeable;
+import java.io.IOException;
+
+/* loaded from: classes3.dex */
+public abstract class j {
+    public static void a(Closeable... closeableArr) {
+        if (closeableArr == null) {
+            return;
+        }
+        for (Closeable closeable : closeableArr) {
+            if (closeable != null) {
+                try {
+                    closeable.close();
+                } catch (IOException e10) {
+                    e10.printStackTrace();
+                }
+            }
+        }
+    }
+}

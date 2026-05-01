@@ -1,0 +1,131 @@
+{
+  "app_info": {
+    "package_name": "com.msandroid.mobile",
+    "launcher_activity": "com.mobile.brasiltv.activity.SplashAty",
+    "app_version": "6.5.0",
+    "version_code": 60500,
+    "share_data_version_code": "999999",
+    "apk_size": "34MB",
+    "apk_path": "/data/app/com.msandroid.mobile-ySoNZuRN2qhnqck_C12UUQ==/base.apk"
+  },
+  "user_info": {
+    "user_id": "888345958",
+    "key_sn": "a80ee514a9e56adb67cacd42ea078ae5",
+    "user_identity": "1",
+    "device_id": "AtUv_jwdFowZKa7PpDHV6FXyXI_ctblfcvsWAbLhztnt",
+    "coupon_qualification_time": "1777613479840",
+    "coupon_qualification_invalid_time": "7380000",
+    "has_coupon_qualification": false
+  },
+  "security_keys": {
+    "appkey_umeng": "68b903e0e563686f429a3a60",
+    "utdid": "afQpQbwEZ7QDAGwYjrcHaJUO",
+    "agoo_secret": "8cd8a8bfd892266a51cf9332e20381cd",
+    "push_device_token": "AtUv_jwdFowZKa7PpDHV6FXyXI_ctblfcvsWAbLhztnt",
+    "ek_key": "TJjXE2M16KIGKzxsvtvqgw==",
+    "sp_sn_backup": "695745755364317374416977325a653856776e53346f7258455a4c69454a303455315a565a2b39466430412f445976724b544773696b6855714d454777356f68",
+    "des_encrypted_host1": "OJpZcVJLpU90qL7PgRZKydhI5FwCBst0",
+    "des_encrypted_host2": "B4PNh3W7M3w="
+  },
+  "servers": {
+    "update_server": "mekdw.htvbox.club",
+    "api_server": "yumao.puata.info",
+    "cdn_image_server": "cftpbe.39114gi1.com",
+    "unknown_tls_server": "oysfb.iy9da42vq9.com",
+    "cloudflare_ips": [
+      "104.18.50.75",
+      "104.21.47.66",
+      "104.21.82.53",
+      "104.21.12.105",
+      "104.21.26.200",
+      "172.67.181.12",
+      "172.67.138.1",
+      "172.67.214.7",
+      "172.67.141.109",
+      "172.67.196.1"
+    ],
+    "push_server": "123.183.232.80:443",
+    "unknown_api_server": "149.102.224.19:10382",
+    "dns_servers": ["8.8.8.8", "1.1.1.1", "9.9.9.9", "223.5.5.5"],
+    "closed_server": "92.223.98.98:443"
+  },
+  "content_categories": {
+    "root_columns": [
+      {"id": 77040, "name": "Live", "alias": "Live", "code": "masmobile_live", "type": "1", "free": "1"},
+      {"id": 77041, "name": "Home", "alias": "Home", "code": "masmobile_vod", "type": "3", "free": "0"},
+      {"id": 77043, "name": "Hot Search-Ranking", "alias": "Hot Search-Ranking", "code": "masmobile_hot", "type": "3", "free": "0"},
+      {"id": 87030, "name": "Free", "alias": "Free", "code": "masmobile_free", "type": "3", "free": "1"},
+      {"id": 77051, "name": "Special", "alias": "Special", "code": "masmobile_special", "type": "3", "free": "0"},
+      {"id": 77250, "name": "Otros", "alias": "Otros", "code": "9f61dfba-dccf-11ed-be81-66ee262c372f", "type": "3", "free": "0"}
+    ],
+    "vod_columns": [
+      {"id": 77045, "name": "Recomendado", "alias": "Recommended", "code": "masmobile_Recommended"},
+      {"id": 77046, "name": "Filmes", "alias": "Movies", "code": "masmobile_movies"},
+      {"id": 77047, "name": "Serie de TV", "alias": "TV Series", "code": "masmobile_series"},
+      {"id": 77048, "name": "Infantil", "alias": "Kids", "code": "masmobile_kids"},
+      {"id": 77049, "name": "Anime", "alias": "Animes", "code": "masmobile_animes"},
+      {"id": 77050, "name": "Adulto Zonas", "alias": "Adult Zone", "code": "masmobile_adult", "restricted": "1"}
+    ],
+    "live_columns": [
+      {"id": 77052, "name": "ChannelList", "alias": "ChannelList"},
+      {"id": 77056, "name": "Deportes", "alias": "Deportes"},
+      {"id": 87035, "name": "Vivo gratis", "alias": "Vivo gratis", "free": "1"},
+      {"id": 77074, "name": "Cine y Series", "alias": "Cine y Series"},
+      {"id": 77053, "name": "Mas popular", "alias": "Mas popular"},
+      {"id": 77054, "name": "Colombia", "alias": "Colombia"},
+      {"id": 77731, "name": "Venezuela", "alias": "Venezuela"},
+      {"id": 77065, "name": "Ecuador", "alias": "Ecuador"},
+      {"id": 77068, "name": "Mexico", "alias": "Mexico"},
+      {"id": 77067, "name": "Peru", "alias": "Peru"},
+      {"id": 77073, "name": "Chile", "alias": "Chile"},
+      {"id": 77071, "name": "Bolivia", "alias": "Bolivia"},
+      {"id": 77733, "name": "Uruguay", "alias": "Uruguay"},
+      {"id": 77730, "name": "Paraguay", "alias": "Paraguay"},
+      {"id": 77729, "name": "Panama", "alias": "Panama"},
+      {"id": 77728, "name": "Puerto Rico", "alias": "Puerto Rico"},
+      {"id": 77063, "name": "Espana", "alias": "Espana"},
+      {"id": 79166, "name": "Costa Rica", "alias": "Costa Rica"},
+      {"id": 77069, "name": "Estados Unidos", "alias": "Estados Unidos"},
+      {"id": 79167, "name": "Centroamerica", "alias": "Centroamerica"},
+      {"id": 79168, "name": "Honduras", "alias": "Honduras"},
+      {"id": 79169, "name": "El Salvador", "alias": "El Salvador"},
+      {"id": 79171, "name": "Republica Dominicana", "alias": "Republica Dominicana"},
+      {"id": 77064, "name": "Noticias", "alias": "Noticias"},
+      {"id": 77060, "name": "Full HD", "alias": "Full HD"},
+      {"id": 77061, "name": "HD+(265)", "alias": "HD+(265)"},
+      {"id": 77058, "name": "NFL PASS", "alias": "NFL PASS"},
+      {"id": 77055, "name": "NBA PASS", "alias": "NBA PASS"},
+      {"id": 77066, "name": "MLB PASS", "alias": "MLB PASS"},
+      {"id": 77075, "name": "Cultura", "alias": "Cultura"},
+      {"id": 77062, "name": "Musica", "alias": "Musica"},
+      {"id": 79170, "name": "Infantil", "alias": "Infantil"},
+      {"id": 79172, "name": "Religioso", "alias": "Religioso"},
+      {"id": 77076, "name": "Desde Internet", "alias": "Desde Internet"},
+      {"id": 77059, "name": "18+", "alias": "18+", "restricted": "1"}
+    ],
+    "special_columns": [
+      {"id": 77324, "name": "Como conoci a tu madre", "alias": "How I Met Your Mother"},
+      {"id": 77320, "name": "Rapido y furioso serie de Peliculas"},
+      {"id": 77317, "name": "Peliculas de Jackie Chan"},
+      {"id": 77336, "name": "Friends"},
+      {"id": 77305, "name": "Coleccion de peliculas clasicas de Disney"},
+      {"id": 77314, "name": "Coleccion DC"},
+      {"id": 77306, "name": "Marvel serie filmica"},
+      {"id": 77332, "name": "Lucifer"},
+      {"id": 77311, "name": "Lizzie"},
+      {"id": 77329, "name": "Mr. Bean"}
+    ]
+  },
+  "database_catalog": {
+    "albums_count": 4,
+    "albums_types": {"movie": 3, "teleplay": 1},
+    "album_schema": "id, playIndex, programType, releaseTime, updateCount, director, playName, volumnCount, contentId, trySee, description, updateTime, type, seriesNumber, tags, playContentId, score, posterUrl, size, name, alias, playTime, typeId, saveTime",
+    "links_schema": "id, duration, recordTime, contentId, position, title"
+  },
+  "update_block_method": {
+    "method": "Modified current_version_code from 60201 to 999999 in share_data.xml + iptables blocking port 80 for UID 10065",
+    "hosts_blocked": ["mekdw.htvbox.club", "yumao.puata.info", "magistvec.com", "htvbox.club", "www.htvbox.club"],
+    "bind_mount_hosts": "/data/local/tmp/hosts -> /etc/hosts",
+    "iptables_rule": "iptables -A OUTPUT -p tcp --dport 80 -m owner --uid-owner 10065 -j REJECT"
+  }
+}

@@ -1,0 +1,14 @@
+package com.hpplay.glide.load;
+
+import java.security.MessageDigest;
+
+/* loaded from: classes2.dex */
+public interface Key {
+    public static final String STRING_CHARSET_NAME = "UTF-8";
+
+    boolean equals(Object obj);
+
+    int hashCode();
+
+    void updateDiskCacheKey(MessageDigest messageDigest);
+}

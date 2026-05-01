@@ -1,0 +1,17 @@
+package com.taobao.accs.base;
+
+import android.content.Intent;
+import android.os.IBinder;
+
+/* loaded from: classes3.dex */
+public interface IBaseService {
+    IBinder onBind(Intent intent);
+
+    void onCreate();
+
+    void onDestroy();
+
+    int onStartCommand(Intent intent, int i10, int i11);
+
+    boolean onUnbind(Intent intent);
+}

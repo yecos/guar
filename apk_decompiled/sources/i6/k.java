@@ -1,0 +1,18 @@
+package i6;
+
+import java.util.List;
+
+/* loaded from: classes3.dex */
+public interface k extends m5.a {
+    void b2();
+
+    void d(int i10);
+
+    void e(List list);
+
+    void i();
+
+    void j();
+
+    void showLoading(boolean z10);
+}

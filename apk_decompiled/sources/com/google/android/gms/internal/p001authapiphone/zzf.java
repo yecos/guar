@@ -1,0 +1,18 @@
+package com.google.android.gms.internal.p001authapiphone;
+
+import android.os.IBinder;
+import android.os.Parcel;
+
+/* loaded from: classes.dex */
+public final class zzf extends zza implements zze {
+    public zzf(IBinder iBinder) {
+        super(iBinder, "com.google.android.gms.auth.api.phone.internal.ISmsRetrieverApiService");
+    }
+
+    @Override // com.google.android.gms.internal.p001authapiphone.zze
+    public final void zza(zzg zzgVar) {
+        Parcel obtainAndWriteInterfaceToken = obtainAndWriteInterfaceToken();
+        zzc.zza(obtainAndWriteInterfaceToken, zzgVar);
+        transactAndReadExceptionReturnVoid(1, obtainAndWriteInterfaceToken);
+    }
+}

@@ -1,0 +1,54 @@
+package com.umeng.commonsdk.utils;
+
+import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import com.umeng.commonsdk.debug.UMRTLog;
+import java.util.HashMap;
+
+/* loaded from: classes3.dex */
+public class b {
+
+    /* renamed from: a, reason: collision with root package name */
+    private static HashMap<String, PackageInfo> f11237a = new HashMap<>();
+
+    /* renamed from: b, reason: collision with root package name */
+    private static Object f11238b = new Object();
+
+    public static class a {
+
+        /* renamed from: a, reason: collision with root package name */
+        private static final b f11239a = new b();
+
+        private a() {
+        }
+    }
+
+    public static b a() {
+        return a.f11239a;
+    }
+
+    private b() {
+    }
+
+    public PackageInfo a(Context context, String str, int i10) {
+        PackageInfo packageInfo;
+        synchronized (f11238b) {
+            if (f11237a.containsKey(str)) {
+                UMRTLog.e(UMRTLog.RTLOG_TAG, "--->>> pkg： " + str + ", pkgInfo缓存命中，直接返回");
+                packageInfo = f11237a.get(str);
+            } else {
+                try {
+                    packageInfo = context.getPackageManager().getPackageInfo(str, i10);
+                    UMRTLog.e(UMRTLog.RTLOG_TAG, "--->>> pkg： " + str + ", 获取pkgInfo并缓存");
+                    f11237a.put(str, packageInfo);
+                } catch (PackageManager.NameNotFoundException unused) {
+                    f11237a.put(str, null);
+                    UMRTLog.e(UMRTLog.RTLOG_TAG, "--->>> pkg: " + str + "，目标包未安装。");
+                    packageInfo = null;
+                }
+            }
+        }
+        return packageInfo;
+    }
+}
