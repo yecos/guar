@@ -1,112 +1,209 @@
 # Xuper TV - Reverse Engineering Project
-## Estado del Proyecto - Documento de Traspaso
+## Estado del Proyecto - Documento de Traspaso ACTUALIZADO
 
-> **Fecha:** 2026-05-01
+> **Fecha:** 2026-05-01 (Sesión 3)
 > **Propósito:** Permitir que una nueva sesión continúe el trabajo sin pérdida de contexto
 
 ---
 
-## 1. RESUMEN EJECUTIVO
+## 1. RESUMEN EJECUTIVO - CAMBIO CRÍTICO
 
-Se está haciendo **reverse engineering** de la app IPTV **Xuper TV** para construir una app de streaming propia. El proyecto ha avanzado significativamente pero tiene un **bloqueador crítico**: los servidores rechazan versionCode antiguos con el mensaje "版本已停止使用" (versión descontinuada).
+Se está haciendo **reverse engineering** de la app IPTV **Xuper TV** para construir una app de streaming propia.
 
-**Estado actual:** ✅ Infraestructura completa | ❌ Bloqueado por versionCode
+### ⚠️ HALLAZGO CRÍTICO DE ESTA SESIÓN:
+El error "版本已停止使用" **NO es un problema de versionCode**. Es un **CIERRE DEL SERVICIO**. TODOS los versionCodes son rechazados (probamos desde 43400 hasta 70200). El backend portalCore está siendo descontinuado.
+
+**Estado actual:** ✅ Infraestructura completa | ❌ API backend DESCONTINUADO | 🔄 Necesita pivotear a Xup3rTV o nueva fuente
 
 ---
 
-## 2. BLOQUEADOR CRÍTICO - ACCIÓN INMEDIATA REQUERIDA
+## 2. HALLAZGOS DE ESTA SESión (Sesión 3)
 
-### Problema
-Los servidores de Xuper TV validan el `versionCode` en cada petición API. Versiones antiguas reciben:
-```json
-{"msg": "版本已停止使用", "code": 403}
+### 2.1 APKs analizadas
+| APK | Versión | versionCode | Ubicación |
+|---|---|---|---|
+| xuper_celular.apk | 6.2.1 | 60201 | `/home/z/my-project/download/` |
+| Xupertv_latest_version.apk | 6.5.4 | 60504 | `/home/z/my-project/upload/` |
+| descargar_Xuper_tv_6_5_5_ultima_version_celular.apk | 6.5.5 | 60505 | `/home/z/my-project/upload/` |
+| xuper_base.apk | ? | ? | `/home/z/my-project/upload/` |
+
+### 2.2 Resultados de pruebas API exhaustivas
+- **versionCode 60505** (v6.5.5) → RECHAZADO en todos los endpoints
+- **versionCode 43404** (esquema v4.34.4, encontrado en ANY.RUN sandbox) → RECHAZADO
+- **versionCodes 43400-43510, 49900, 50000, 60000-60520, 70000-70200** → TODOS RECHAZADOS
+- **Sin header versionCode** → TAMBIÉN RECHAZADO
+- **Con headers alternativos** (app-version-code, verCode, etc.) → RECHAZADO
+- **Con credenciales reales** (userId, deviceId) → RECHAZADO
+- **Con diferentes Content-Types** → RECHAZADO
+
+### 2.3 Endpoint que NO rechaza por versión
 ```
+/api/portalCore/config/get → {"returnCode":"500","errorMessage":"系统内部错误（未知错误）","data":null}
+```
+Este endpoint devuelve error 500 del servidor (error interno), NO el error de "versión descontinuada". Esto confirma que el servidor está procesando la petición, pero el servicio portalCore está caído/descontinuado.
 
-### versionCodes conocidos
-| Versión APK | versionCode | Estado |
+### 2.4 Nuevos endpoints descubiertos en el DEX
+```
+/api/portalCore/getHome
+/api/portalCore/v13_1/getSlbInfo
+/api/portalCore/v3/getColumnContents
+/api/portalCore/v3/getRecommends
+/api/portalCore/v3/getShelveData
+/api/portalCore/v3/snToken
+/api/portalCore/v5/getLiveData
+/api/portalCore/v5/login/thirdpart
+/api/portalCore/v6/active
+/api/portalCore/v6/login
+/api/portalCore/v9/startPlayVOD
+/api/v1/crashtrack/upload
+/api/anti/updateZdata
+/api/crashsdk/validate
+```
+TODOS devuelven "版本已停止使用" (portal200001)
+
+### 2.5 Código de error portal200001
+El código `portal200001` es uno de muchos códigos en el sistema:
+- portal100058 a portal100079 (otros errores)
+- **portal200001** (versión descontinuada - el que siempre recibimos)
+- portal400001 (otro tipo de error)
+
+### 2.6 Campo real: apk_versioncode
+En el código DEX encontramos que el campo se llama `apk_versioncode` (no solo `versionCode`). Pero usar este header tampoco funciona.
+
+---
+
+## 3. SITUACIÓN ACTUAL DE XUPER TV (investigación web)
+
+### 3.1 Xuper TV está siendo bloqueado/descontinuado
+- YouTube: "🚨 URGENT! XUPER TV has been PERMANENTLY BLOCKED" (Abril 2026)
+- YouTube: "XUPER TV is down, install the new DEFINITIVE update"
+- Amazon ha eliminado Xuper TV de Fire TV
+- Usuarios reportan que necesitan VPN para acceder
+- Error común: "Due to policy limitation, your area cannot log on to use"
+
+### 3.2 Xup3rTV - El reemplazo/clone
+- **Xup3rTV** es un clone de Xuper TV que está funcionando actualmente
+- YouTube: "How to Install Xup3rTV (Clone) on Fire TV | Updated Method 2026"
+- YouTube: "Nueva versión de XUP3RTV no necesita vincular"
+- Xup3rTV parece usar un backend diferente o actualizado
+
+### 3.3 Múltiples variantes de la app
+| Paquete | Nombre | Nota |
 |---|---|---|
-| 6.2.1 (APK vieja del celular) | 60201 | ❌ RECHAZADO |
-| 6.5.0 (extraída del emulador) | 60500 | ❌ RECHAZADO |
-| 6.5.4 (APK nueva - pendiente) | ~60504+ | ❓ PENDIENTE DE EXTRACCIÓN |
+| com.msandroid.mobile | Xuper TV original | NUESTRAS APKs, backend descontinuado |
+| my.app.appy.xupertv | Xuper TV (Google Play) | Versión diferente |
+| my.blockdeal.xupertv | Xuper TV (Google Play) | Otra variante |
+| com.godrejshampoo.xupertv | Xuper TV (APKPure) | Otra variante |
+| com.supertv.yapp | SuperTV | Clone diferente |
+| com.appxsuper.tvpro | SuperTV PRO | Clone PRO |
 
-### Solución - PASO 1 DE LA NUEVA SESIÓN
-1. **El usuario debe proporcionar la APK nueva** (v6.5.4 o superior)
-2. Ejecutar el analyzer: `python3 /home/z/my-project/download/xuper-tools/xuper-apk-analyzer.py NUEVA_APK.apk --update-monitor`
-3. El script extrae automáticamente el versionCode y actualiza la configuración
-4. Probar APIs con el nuevo versionCode: `./xuper-update.sh --test-api NUEVO_VERSION_CODE`
-
-### Si la APK nueva también falla
-- Probar versionCodes incrementales: 60501, 60502, 60503, 60504, 60505, etc.
-- Buscar en la Google Play Store metadata (a veces tienen el versionCode en el HTML)
-- Usar APKPure o similar para obtener la última versión
+### 3.4 Esquema de versiones
+Hay DOS esquemas de versionCode:
+- **Esquema 6xxxxx**: versionName 6.x.x → versionCode 60201, 60504, 60505 (nuestras APKs)
+- **Esquema 434xx**: versionName 4.34.x → versionCode 43404 (encontrado en ANY.RUN sandbox, v4.34.4)
+- **Esquema 7xxxx**: versionName 7.1.0 → versionCode ~70100 (mencionado en sitios web)
 
 ---
 
-## 3. INFRAESTRUCTURA DE DOMINIOS
+## 4. NUEVA DIRECCIÓN RECOMENDADA
 
-### 15 Dominios API (detrás de Cloudflare)
-Los dominios usan un patrón obfuscado: `XXXXX.YYYYYYY.com` donde XXXXX y YYYYYY son secuencias aleatorias de 5-7 caracteres.
+### Opción A: Analizar Xup3rTV (RECOMENDADA)
+1. Descargar APK de Xup3rTV desde YouTube/installer links
+2. Analizar con nuestro xuper-apk-analyzer.py
+3. Probablemente usa un backend diferente o versión más nueva del mismo backend
+4. Si funciona, construir app propia basada en esa API
 
-**Dominios confirmados:**
-```
-c2tgd.izvhrdcjb.com
-dtgrd.txhnojlbu.com
-cftpbe.39114gi1.com
-skvbv.hbcpdutka.com
-jktgk.bxtzwlyan.com
-mekdw.htvbox.club
-```
+### Opción B: Probar las variantes de Google Play
+1. Descargar APK de `my.app.appy.xupertv` desde APKPure
+2. Analizar versionCode y endpoints
+3. Puede usar un backend diferente al de com.msandroid.mobile
 
-**Dominios bajo patrón `*.puata.info` (13 subdominios):**
-```
-kexun.puata.info
-lvjian.puata.info
-zhipu.puata.info
-xingse.puata.info
-baoxian.puata.info
-zhubao.puata.info
-jiaoyu.puata.info
-meishi.puata.info
-chuanmei.puata.info
-youxuan.puata.info
-lvxing.puata.info
-dianying.puata.info
-yumao.puata.info
-```
+### Opción C: MITM proxy con teléfono real
+1. Instalar la app funcional en un teléfono Android
+2. Configurar mitmproxy para interceptar tráfico
+3. Capturar headers, endpoints y respuestas reales
+4. Reproducir las peticiones exactas
 
-**CDN IP:** `223.109.148.179` (resuelve para todos los dominios puata.info)
-
-### Dominio especial: `yumao.puata.info`
-- Endpoint `/api/portalCore/v8/login` respondió (aunque vacío)
-- Puede ser un dominio de respaldo o migración
+### Opción D: Construir app IPTV desde cero
+1. Usar listas M3U públicas (hay muchos repositorios)
+2. Construir un player IPTV propio (ExoPlayer/Video.js)
+3. No depender de APIs de terceros
 
 ---
 
-## 4. ENDPOINTS API DESCUBIERTOS
+## 5. INFRAESTRUCTURA DE DOMINIOS (sin cambios)
 
-### Endpoints principales
-| Endpoint | Método | Propósito |
+### Dominios API confirmados (detrás de Cloudflare)
+```
+c2tgd.izvhrdcjb.com    → portal200001 (servicio descontinuado)
+dtgrd.txhnojlbu.com    → portal200001
+cftpbe.39114gi1.com    → 403 Cloudflare block
+skvbv.hbcpdutka.com    → sin respuesta
+jktgk.bxtzwlyan.com    → sin respuesta
+mekdw.htvbox.club      → 404 Not Found
+```
+
+### Dominios *.puata.info (13 subdominios)
+```
+kexun.puata.info       → sin respuesta / timeout
+lvjian.puata.info      → sin respuesta
+zhipu.puata.info       → sin respuesta
+xingse.puata.info      → sin respuesta
+baoxian.puata.info     → sin respuesta
+zhubao.puata.info      → sin respuesta
+jiaoyu.puata.info      → sin respuesta
+meishi.puata.info      → sin respuesta
+chuanmei.puata.info    → sin respuesta
+youxuan.puata.info     → sin respuesta
+lvxing.puata.info      → sin respuesta
+dianying.puata.info    → sin respuesta
+yumao.puata.info       → HTTP 500 (servidor caído)
+```
+
+**CDN IP:** `223.109.148.179` (para puata.info)
+
+---
+
+## 6. ENDPOINTS API COMPLETOS
+
+| Endpoint | Método | Estado actual |
 |---|---|---|
-| `/api/portalCore/v8/login` | POST | Login principal |
-| `/api/portalCore/v6/login` | POST | Login versión anterior |
-| `/api/portalCore/pwdCheck` | POST | Verificación de contraseña |
-| `/api/portalCore/config/get` | GET | Configuración del portal |
-| `/api/v2/dcs/getAddr` | POST | Obtener dirección de servidor |
-| `/cc_info` | GET | Info del servidor (requiere GZIP) |
-| `/api/portalCore/getAuthInfo` | POST | Info de autenticación |
-| `/api/portalCore/getHome` | POST | Home del portal |
+| `/api/portalCore/v3/snToken` | POST | portal200001 |
+| `/api/portalCore/v3/getColumnContents` | POST | portal200001 |
+| `/api/portalCore/v3/getRecommends` | POST | portal200001 |
+| `/api/portalCore/v3/getShelveData` | POST | portal200001 |
+| `/api/portalCore/v5/getLiveData` | POST | portal200001 |
+| `/api/portalCore/v5/login/thirdpart` | POST | portal200001 |
+| `/api/portalCore/v6/active` | POST | portal200001 |
+| `/api/portalCore/v6/login` | POST | portal200001 |
+| `/api/portalCore/v8/login` | POST | portal200001 |
+| `/api/portalCore/v9/startPlayVOD` | POST | portal200001 |
+| `/api/portalCore/v13_1/getSlbInfo` | POST | portal200001 |
+| `/api/portalCore/config/get` | POST | **500 Internal Error** (no check versión) |
+| `/api/portalCore/pwdCheck` | POST | portal200001 |
+| `/api/portalCore/getAuthInfo` | POST | portal200001 |
+| `/api/portalCore/getHome` | POST | portal200001 |
+| `/api/v2/dcs/getAddr` | POST | 400 Bad Request |
+| `/api/v1/crashtrack/upload` | POST | vacío |
+| `/api/anti/updateZdata` | POST | vacío |
+| `/api/crashsdk/validate` | POST | vacío |
 
-### Headers requeridos en las peticiones
+### Headers que la app envía (del código DEX)
 ```
-versionCode: <VERSION_CODE_ACTUAL>
+versionCode / apk_versioncode: <VERSION_CODE>
 platform: android
-Content-Type: application/json  (o application/x-www-form-urlencoded)
+Content-Type: application/json o application/x-www-form-urlencoded
 User-Agent: Dalvik/2.1.0 (Linux; U; Android 14)
+app-version-code: <VERSION_CODE>   (encontrado en ANY.RUN sandbox)
+art-version: 340090000             (encontrado en ANY.RUN sandbox)
+appId: 1
+channelId: default
+deviceId: <DEVICE_ID>
 ```
 
 ---
 
-## 5. CREDENCIALES EXTRADAS
+## 7. CREDENCIALES EXTRADAS
 
 ### Cuenta del emulador
 ```json
@@ -129,160 +226,97 @@ User-Agent: Dalvik/2.1.0 (Linux; U; Android 14)
 
 ### 3DES Encryption
 - Los valores de `host` en la app están encriptados con 3DES
-- La clave 3DES está hardcodeada en el código de la app
-- El analyzer (`xuper-apk-analyzer.py`) busca claves automáticamente
+- La clave 3DES está en el código pero ofuscada por iJiami (爱加密) packing
+- El archivo `domain_test.json` en la APK tiene todos los valores como "xx" (se cargan en runtime)
 
 ---
 
-## 6. HERRAMIENTAS DISPONIBLES
+## 8. HERRAMIENTAS DISPONIBLES
 
-### Scripts principales (`/home/z/my-project/download/xuper-tools/`)
+### Scripts (`/home/z/my-project/download/xuper-tools/`)
+| Archivo | Propósito |
+|---|---|
+| `xuper-apk-analyzer.py` | Analiza APKs con androguard |
+| `xuper-update.sh` | Wrapper interactivo |
+| `xuper-api-monitor.sh` | Monitoreo continuo de APIs |
+| `generate_report.py` | Genera reporte PDF |
+| `generate-guide.js` | Genera guía instructiva |
 
-| Archivo | Propósito | Uso |
-|---|---|---|
-| `xuper-apk-analyzer.py` | Analiza APKs con androguard | `python3 xuper-apk-analyzer.py APK.apk [--full] [--update-monitor]` |
-| `xuper-update.sh` | Wrapper interactivo | `./xuper-update.sh --apk APK.apk` o `--auto` o `--test-api` |
-| `xuper-api-monitor.sh` | Monitoreo continuo de APIs | `./xuper-api-monitor.sh [VERSION_CODE]` |
-| `generate_report.py` | Genera reporte PDF de análisis | `python3 generate_report.py` |
-| `generate-guide.js` | Genera guía instructiva | `node generate-guide.js` |
-
-### APK existente
-- `/home/z/my-project/download/xuper_celular.apk` — v6.2.1, versionCode 60201 (OBSOLETO)
-
-### Datos extraídos
-- `/home/z/my-project/download/xuper_extracted_credentials.json` — Credenciales completas
-- `/home/z/my-project/download/xuper_server_discovery.json` — Resultados de descubrimiento
-- `/home/z/my-project/download/xuper_api_test_results.json` — Resultados de pruebas API
-- `/home/z/my-project/download/xuper_extracted/` — APK decompilada (resources, META-INF, etc.)
+### APKs disponibles
+| Archivo | Ubicación |
+|---|---|
+| xuper_celular.apk (v6.2.1) | `/home/z/my-project/download/` |
+| Xupertv_latest_version.apk (v6.5.4) | `/home/z/my-project/upload/` |
+| descargar_Xuper_tv_6_5_5_ultima_version_celular.apk (v6.5.5) | `/home/z/my-project/upload/` |
+| xuper_base.apk | `/home/z/my-project/upload/` |
 
 ---
 
-## 7. REPOSITORIO GITHUB
+## 9. REPOSITORIO GITHUB
 
 **URL:** https://github.com/yecos/guar
-**Token (¡REVOCAR!):** Ver remote config con `git remote -v` — el token está en la URL del remote. **DEBE ser revocado** inmediatamente en:
-https://github.com/settings/tokens
-
-### Estado del repo
-- 5 commits en main
-- Archivos grandes (jadx.jar, APKs) fueron limpiados del historial con `git-filter-repo`
-- Se agregó `.gitignore` para prevenir commits de archivos grandes
-- Último push: exitoso (force push después de limpiar historial)
-
-### Archivos en el repo
-```
-xuper-tools/
-├── .gitignore
-├── xuper-apk-analyzer.py     # Analyzer principal
-├── xuper-update.sh            # Script de automatización
-├── xuper-api-monitor.sh       # Monitor de APIs
-├── generate_report.py         # Generador de reportes
-└── generate-guide.js          # Generador de guía
-```
-
----
-
-## 8. MONITOR DASHBOARD (Next.js)
-
-### Estado: ✅ Funcional (pero no desplegado)
-
-El dashboard de monitoreo fue construido con Next.js + better-sqlite3. Mostraba 15 dominios UP.
-
-**Problemas pendientes para despliegue:**
-- better-sqlite3 no funciona en Vercel (necesita Turso/libSQL)
-- Mencionado pero NO iniciado: migrar a Turso DB para despliegue en Vercel
-- El código del monitor NO está en el repo de GitHub actualmente (estaba en `/home/z/my-project/download/xuper-monitor/` que ya no existe en este entorno)
-
-### Para reconstruir el monitor
-```bash
-# Si se necesita recrear:
-npx create-next-app@latest xuper-monitor
-# Agregar better-sqlite3 o @libsql/client
-# Los dominios están en el archivo xuper-api-monitor.sh y en este documento
-```
-
----
-
-## 9. COMANDOS LISTOS PARA EJECUTAR
-
-### Cuando el usuario proporcione la APK nueva:
-```bash
-# 1. Analizar la APK
-python3 /home/z/my-project/download/xuper-tools/xuper-apk-analyzer.py /path/to/nueva.apk --update-monitor
-
-# 2. Probar APIs con el nuevo versionCode
-cd /home/z/my-project/download/xuper-tools
-./xuper-update.sh --test-api NUEVO_VERSION_CODE
-
-# 3. O probar directamente con curl
-curl -s -m 10 \
-  -X POST "https://yumao.puata.info/api/portalCore/v8/login" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -H "versionCode: NUEVO_VERSION_CODE" \
-  -H "platform: android" \
-  -H "User-Agent: Dalvik/2.1.0 (Linux; U; Android 14)" \
-  -d "username=test&password=test"
-
-# 4. Monitoreo continuo
-./xuper-api-monitor.sh NUEVO_VERSION_CODE
-```
-
-### Brute-force de versionCodes (si la APK nueva tampoco funciona):
-```bash
-for vc in $(seq 60504 60520); do
-  echo -n "Testing versionCode $vc: "
-  resp=$(curl -s -m 5 -X POST "https://yumao.puata.info/api/portalCore/v8/login" \
-    -H "Content-Type: application/x-www-form-urlencoded" \
-    -H "versionCode: $vc" \
-    -H "platform: android" \
-    -d "username=test&password=test" 2>/dev/null)
-  if echo "$resp" | grep -q "版本已停止使用"; then
-    echo "REJECTED"
-  elif [ -n "$resp" ]; then
-    echo "POSSIBLE HIT! Response: $(echo $resp | head -c 200)"
-  else
-    echo "NO RESPONSE"
-  fi
-done
-```
+**Token:** Ver `git remote -v` — **DEBE ser revocado** en https://github.com/settings/tokens
 
 ---
 
 ## 10. FLUJO DE TRABAJO RECOMENDADO PARA LA PRÓXIMA SESIÓN
 
-1. **Pedir la APK nueva al usuario** — Es el bloqueador #1
-2. **Ejecutar xuper-apk-analyzer.py** con la APK nueva
-3. **Probar APIs** con el versionCode extraído
-4. **Si funciona:** 
-   - Documentar endpoints funcionales
-   - Construir app propia con las APIs descubiertas
-   - Actualizar el monitor dashboard
-5. **Si no funciona:**
-   - Probar versionCodes incrementales (brute force)
-   - Buscar versionCode en Google Play / APKPure metadata
-   - Considerar MITM proxy con teléfono real (la app funciona ahí)
-6. **Revocar el token de GitHub** lo antes posible
-7. **Migrar monitor a Turso/Vercel** si se quiere desplegar
+### ⚠️ NO seguir intentando versionCodes - el servicio está descontinuado
+
+### En su lugar:
+1. **Descargar Xup3rTV APK** — Es el reemplazo activo
+   - Buscar enlaces en videos de YouTube recientes
+   - Probar thexupertv.co o xupertvz.com
+2. **Analizar Xup3rTV con nuestro analyzer** — Ver si usa el mismo backend o uno nuevo
+3. **Si usa el mismo backend**: Buscar cómo obtiene el versionCode correcto
+4. **Si usa backend nuevo**: Mapear los nuevos endpoints y construir la app
+5. **Alternativa**: Descargar la variante de Google Play (`my.app.appy.xupertv`) y analizarla
+6. **Alternativa MITM**: Usar un teléfono real con la app funcionando + mitmproxy
+7. **Revocar token de GitHub**
 
 ---
 
 ## 11. LECCIONES APRENDIDAS
 
-- Los servidores usan Cloudflare como proxy — las IPs directas no sirven para bypassear
-- El versionCode se valida en TODOS los endpoints, no solo en login
-- La app usa 3DES para encriptar los valores de host — las claves están en el código
-- El paquete real es `com.msandroid.mobile` (no `com.xuper.tv`)
-- Los dominios rotan periódicamente — el monitor debe actualizarse con cada nueva APK
-- APKs de más de 100MB no se pueden subir a GitHub sin LFS
+- "版本已停止使用" significa SERVICIO DESCONTINUADO, no "version vieja"
+- El error portal200001 se devuelve para CUALQUIER versionCode (incluso sin header)
+- iJiami (爱加密) packing impide la extracción estática de dominios y claves 3DES
+- Los dominios están vacíos en domain_test.json ("xx") — se cargan dinámicamente en runtime
+- Los servidores detrás de Cloudflare no se pueden bypassear con IP directa
+- Xuper TV tiene múltiples variantes con diferentes packages y posiblemente diferentes backends
+- La app está siendo activamente bloqueada por Amazon y posiblemente por proveedores de ISP
 
 ---
 
-## 12. ARCHIVOS DE CONTEXTO ADICIONALES
+## 12. COMANDOS ÚTILES
 
-| Archivo | Contenido |
-|---|---|
-| `/home/z/my-project/download/Xuper_TV_Reverse_Engineering_Report.docx` | Reporte completo de reverse engineering |
-| `/home/z/my-project/download/Xuper_TV_Analisis_v654.pdf` | Análisis de la v6.5.4 |
-| `/home/z/my-project/download/Xuper_TV_API_Access_Automation_Instructive.pdf` | Instructivo de automatización |
-| `/home/z/my-project/download/Xuper_TV_Instructivo_Proxima_Sesion.docx` | Instructivo para próxima sesión |
-| `/home/z/my-project/download/github_xuper_releases.json` | Releases de GitHub de Xuper TV |
+### Analizar una APK nueva
+```bash
+python3 /home/z/my-project/download/xuper-tools/xuper-apk-analyzer.py APK.apk --update-monitor
+```
+
+### Extraer versionCode rápido (sin androguard, que es lento)
+```python
+import zipfile, struct
+apk = 'APK.apk'
+with zipfile.ZipFile(apk, 'r') as z:
+    data = z.read('AndroidManifest.xml')
+for offset in range(0, 50000, 4):
+    val = struct.unpack('<I', data[offset:offset+4])[0]
+    if 60000 <= val <= 99999:
+        print(f'versionCode at offset {offset}: {val}')
+```
+
+### Probar API endpoint
+```bash
+curl -s -m 10 -X POST "https://DOMAIN/api/portalCore/v8/login" \
+  -H "Content-Type: application/json" \
+  -H "versionCode: 60505" \
+  -H "platform: android" \
+  -d '{"appId":"1"}'
+```
+
+### Buscar en web información actualizada
+```bash
+z-ai function -n web_search -a '{"query": "Xuper TV latest version 2026 working", "num": 10}'
+```
