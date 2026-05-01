@@ -1,209 +1,187 @@
 # Xuper TV - Reverse Engineering Project
-## Estado del Proyecto - Documento de Traspaso ACTUALIZADO
+## Estado del Proyecto - Documento de Traspaso ACTUALIZADO (Sesión 4)
 
-> **Fecha:** 2026-05-01 (Sesión 3)
+> **Fecha:** 2026-05-01 (Sesión 4)
 > **Propósito:** Permitir que una nueva sesión continúe el trabajo sin pérdida de contexto
 
 ---
 
-## 1. RESUMEN EJECUTIVO - CAMBIO CRÍTICO
+## 1. RESUMEN EJECUTIVO
 
 Se está haciendo **reverse engineering** de la app IPTV **Xuper TV** para construir una app de streaming propia.
 
-### ⚠️ HALLAZGO CRÍTICO DE ESTA SESIÓN:
-El error "版本已停止使用" **NO es un problema de versionCode**. Es un **CIERRE DEL SERVICIO**. TODOS los versionCodes son rechazados (probamos desde 43400 hasta 70200). El backend portalCore está siendo descontinuado.
+### HALLAZGOS CRÍTICOS DE SESIÓN 4:
+1. **CLAVE 3DES EXTRAÍDA**: `7JJ8qaJ2A4kJPEJBiMRtANnJ6OC7sPev` (24 bytes, base64)
+2. **13 DOMINIOS API** encontrados en resources.arsc (9 NUEVOS no reportados antes)
+3. **Xuper TV = BrasilIPTV**: La app base es `com.interactive.brasiliptv.app.AppWrapper`
+4. **Google App Engine backend**: `magis-mobile-7abeb.appspot.com`
+5. **Todos los backends portalCore están MUERTOS** (portal200001, 500, o 404)
 
-**Estado actual:** ✅ Infraestructura completa | ❌ API backend DESCONTINUADO | 🔄 Necesita pivotear a Xup3rTV o nueva fuente
+**Estado actual:** ✅ Clave 3DES extraída | ✅ Dominios mapeados | ❌ Backend muerto | 🔄 Necesita MITM con app funcional
 
 ---
 
-## 2. HALLAZGOS DE ESTA SESión (Sesión 3)
+## 2. HALLAZGOS DE SESIÓN 4
 
-### 2.1 APKs analizadas
-| APK | Versión | versionCode | Ubicación |
+### 2.1 APKs analizadas en esta sesión
+| APK | Paquete | Versión | versionCode | Signing | Tamaño DEX | Nota |
+|---|---|---|---|---|---|---|
+| xuper_tv_v711.apk | com.msandroid.mobile | 6.2.2 | 60202 | MAGISOTT | 34.8 MB | SIN iJiami packing! |
+| xuper_tv_2026_v2.apk | com.android.mgstv | 4.34.4 | 43404 | SGM | 13.6 KB | iJiami packed, shell APK |
+
+### 2.2 Clave de encriptación EXTRAÍDA
+```
+3DES Key (base64): 7JJ8qaJ2A4kJPEJBiMRtANnJ6OC7sPev
+3DES Key (hex):    ec927ca9a2760389093c424188c46d00d9c9e8e0bbb0f7af
+3DES Key (bytes):  24
+Algoritmo:         DESede/ECB/PKCS5Padding
+
+AES Key (base64):  7JJ8qaJ2A4kJPEJB  (12 bytes, clave parcial?)
+AES Algoritmos:    AES/CBC/NOPADDING, AES/ECB/PKCS5Padding
+```
+La clave se encontró cerca de `SecretKeySpec` en el DEX no empaquetado (v6.2.2).
+
+### 2.3 Dominios API COMPLETOS (de resources.arsc)
+Los dominios están en TEXTRO PLANO en resources.arsc, NO encriptados:
+
+| Dominio | Estado | Detalle |
+|---|---|---|
+| `bg4gr.msfxethyc.com` | portal200001 | Servicio descontinuado |
+| `bktjr.akvndhzgx.com` | 403 | Cloudflare block |
+| `c2tgd.izvhrdcjb.com` | portal200001 | Servicio descontinuado |
+| `c2tgd3.ewzpuscyv.com` | 404 | openresty/1.27.1.1 - SIN version gate |
+| `cdtgcr.bcjoapser.com` | 403 | Cloudflare block |
+| `ckfdr.nzxgfvrud.com` | 500 | Servidor completamente roto |
+| `dtgrd.txhnojlbu.com` | portal200001 | Servicio descontinuado |
+| `g4tc2.irlapchbd.com` | 404 | nginx - SIN version gate |
+| `jktgk.bxtzwlyan.com` | 404 | Go server - SIN version gate |
+| `jktgr.ludgwoxhe.com` | 404 | Spring Boot - SIN version gate |
+| `skc2r.plracsimf.com` | 404 | Go server - SIN version gate |
+| `skvbv.hbcpdutka.com` | 404 | openresty - SIN version gate |
+| `vtgrc.ncimxztfk.com` | 404 | Spring Boot - SIN version gate |
+| `magis-mobile-7abeb.appspot.com` | 404 | Google App Engine |
+| `mekdw.htvbox.club` | 404 | openresty (sesión anterior) |
+
+### 2.4 IPs de Alibaba Cloud (encontradas en DEX)
+```
+119.23.108.135
+120.25.130.190  → Spring Boot (devuelve 404 JSON en portalCore)
+120.77.74.81
+120.78.18.241
+120.78.185.110
+120.78.85.189
+47.106.59.179
+47.106.75.170
+47.112.113.131
+47.113.57.59
+```
+Todas son instancias Alibaba Cloud (Aliyun). Solo 120.25.130.190 respondió con Spring Boot.
+
+### 2.5 yumao.puata.info - Endpoints VIVOS
+```
+/anti_logs → {"resp_code": 1,"msg": "http header缺少appkey"}  (vivo, necesita appkey + GZIP)
+/cc_info   → {"resp_code": 1,"msg": "http header缺少appkey"}  (vivo, necesita appkey + GZIP)
+/api/portalCore/* → HTTP 500 (servidor crashea, SIN version gate!)
+```
+yumao.puata.info NO tiene el check de versión portal200001. Los endpoints crashean pero están procesando las peticiones.
+
+### 2.6 Google OAuth Client ID
+```
+18767524675-b07kvgssnv757te063qbqel15b48s0ig.apps.googleusercontent.com
+```
+
+### 2.7 Otros hallazgos del DEX
+- `www.magistvec.com/download` — URL de descarga de Magis TV
+- `www.oi1lgew.com` — Dominio de contenido/test con archivos multimedia
+- `Xupermobservicio@outlook.com` — Email de soporte
+- Recursos: `domain_is_security`, `isEncrypt`, `portal_main`, `portal_backup`, `mTvOfficialDownloadUrl`, `mTvPlaylistUrl`
+- Contacto: `@bol.com.br`, `@globomail.com`, etc. (emails brasileños - confirma origen BrasilIPTV)
+
+### 2.8 Certificados de firma
+| APK | Certificado | Significado |
+|---|---|---|
+| v6.2.2 (com.msandroid.mobile) | MAGISOTT | Magis TV / Xuper TV |
+| v4.34.4 (com.android.mgstv) | SGM | MGS TV / Magis TV |
+| v6.2.1 original | (original) | Xuper TV original |
+
+---
+
+## 3. RELACIÓN ENTRE APPS (DESCUBIERTA)
+
+```
+BrasilIPTV (com.interactive.brasiliptv.app.AppWrapper)
+  └── Xuper TV (com.msandroid.mobile) - rebrand con iJiami packing
+  └── MGS TV / Xuper TV 2026 (com.android.mgstv) - rebrand con iJiami packing
+  └── Magis TV - mismo backend, diferentes dominios
+```
+
+Todas estas apps comparten:
+- Mismo backend portalCore
+- Mismos dominios en resources.arsc
+- Mismo domain_test.json con "xx" valores
+- Mismo sistema de encriptación 3DES
+- Diferentes certificados de firma (re-firmadas)
+
+---
+
+## 4. VARIANTES DE LA APP CONOCIDAS
+
+| Paquete | Nombre | Estado | Nota |
 |---|---|---|---|
-| xuper_celular.apk | 6.2.1 | 60201 | `/home/z/my-project/download/` |
-| Xupertv_latest_version.apk | 6.5.4 | 60504 | `/home/z/my-project/upload/` |
-| descargar_Xuper_tv_6_5_5_ultima_version_celular.apk | 6.5.5 | 60505 | `/home/z/my-project/upload/` |
-| xuper_base.apk | ? | ? | `/home/z/my-project/upload/` |
-
-### 2.2 Resultados de pruebas API exhaustivas
-- **versionCode 60505** (v6.5.5) → RECHAZADO en todos los endpoints
-- **versionCode 43404** (esquema v4.34.4, encontrado en ANY.RUN sandbox) → RECHAZADO
-- **versionCodes 43400-43510, 49900, 50000, 60000-60520, 70000-70200** → TODOS RECHAZADOS
-- **Sin header versionCode** → TAMBIÉN RECHAZADO
-- **Con headers alternativos** (app-version-code, verCode, etc.) → RECHAZADO
-- **Con credenciales reales** (userId, deviceId) → RECHAZADO
-- **Con diferentes Content-Types** → RECHAZADO
-
-### 2.3 Endpoint que NO rechaza por versión
-```
-/api/portalCore/config/get → {"returnCode":"500","errorMessage":"系统内部错误（未知错误）","data":null}
-```
-Este endpoint devuelve error 500 del servidor (error interno), NO el error de "versión descontinuada". Esto confirma que el servidor está procesando la petición, pero el servicio portalCore está caído/descontinuado.
-
-### 2.4 Nuevos endpoints descubiertos en el DEX
-```
-/api/portalCore/getHome
-/api/portalCore/v13_1/getSlbInfo
-/api/portalCore/v3/getColumnContents
-/api/portalCore/v3/getRecommends
-/api/portalCore/v3/getShelveData
-/api/portalCore/v3/snToken
-/api/portalCore/v5/getLiveData
-/api/portalCore/v5/login/thirdpart
-/api/portalCore/v6/active
-/api/portalCore/v6/login
-/api/portalCore/v9/startPlayVOD
-/api/v1/crashtrack/upload
-/api/anti/updateZdata
-/api/crashsdk/validate
-```
-TODOS devuelven "版本已停止使用" (portal200001)
-
-### 2.5 Código de error portal200001
-El código `portal200001` es uno de muchos códigos en el sistema:
-- portal100058 a portal100079 (otros errores)
-- **portal200001** (versión descontinuada - el que siempre recibimos)
-- portal400001 (otro tipo de error)
-
-### 2.6 Campo real: apk_versioncode
-En el código DEX encontramos que el campo se llama `apk_versioncode` (no solo `versionCode`). Pero usar este header tampoco funciona.
+| com.msandroid.mobile | Xuper TV original | ❌ Muerto | Backend descontinuado |
+| com.android.mgstv | Xuper TV 2026 / MGS TV | ❌ Muerto | iJiami packed, mismo backend |
+| com.series.one.xupertv | Xuper TV 2026 (Google Play) | ❓ No analizada | 38 MB, v1.0 - DIFERENTE app |
+| my.app.appy.xupertv | Xuper TV (Google Play) | ❓ No analizada | |
+| my.blockdeal.xupertv | Xuper TV (Google Play) | ❓ No analizada | |
+| com.godrejshampoo.xupertv | Xuper TV (APKPure) | ❓ No analizada | |
+| com.blcksparrow.xupertv | Xuper TV Pro | Solo informativa | No streaming |
+| my.blacksparrow.tv.xupertv | Xuper TV Global | ❓ No analizada | Por Black Sparrow, 34.7 MB |
+| com.interactive.brasiliptv | BrasilIPTV | ❓ App base original | Sin iJiami = fácil de analizar |
 
 ---
 
-## 3. SITUACIÓN ACTUAL DE XUPER TV (investigación web)
+## 5. ENDPOINTS API COMPLETOS
 
-### 3.1 Xuper TV está siendo bloqueado/descontinuado
-- YouTube: "🚨 URGENT! XUPER TV has been PERMANENTLY BLOCKED" (Abril 2026)
-- YouTube: "XUPER TV is down, install the new DEFINITIVE update"
-- Amazon ha eliminado Xuper TV de Fire TV
-- Usuarios reportan que necesitan VPN para acceder
-- Error común: "Due to policy limitation, your area cannot log on to use"
-
-### 3.2 Xup3rTV - El reemplazo/clone
-- **Xup3rTV** es un clone de Xuper TV que está funcionando actualmente
-- YouTube: "How to Install Xup3rTV (Clone) on Fire TV | Updated Method 2026"
-- YouTube: "Nueva versión de XUP3RTV no necesita vincular"
-- Xup3rTV parece usar un backend diferente o actualizado
-
-### 3.3 Múltiples variantes de la app
-| Paquete | Nombre | Nota |
+### Portal Core (todos en dominios Cloudflare)
+| Endpoint | Estado en Cloudflare | Estado en yumao.puata.info |
 |---|---|---|
-| com.msandroid.mobile | Xuper TV original | NUESTRAS APKs, backend descontinuado |
-| my.app.appy.xupertv | Xuper TV (Google Play) | Versión diferente |
-| my.blockdeal.xupertv | Xuper TV (Google Play) | Otra variante |
-| com.godrejshampoo.xupertv | Xuper TV (APKPure) | Otra variante |
-| com.supertv.yapp | SuperTV | Clone diferente |
-| com.appxsuper.tvpro | SuperTV PRO | Clone PRO |
+| `/api/portalCore/v3/snToken` | portal200001 | 500 |
+| `/api/portalCore/v3/getColumnContents` | portal200001 | 500 |
+| `/api/portalCore/v3/getRecommends` | portal200001 | 500 |
+| `/api/portalCore/v3/getShelveData` | portal200001 | 500 |
+| `/api/portalCore/v5/getLiveData` | portal200001 | 500 |
+| `/api/portalCore/v5/login/thirdpart` | portal200001 | 500 |
+| `/api/portalCore/v6/active` | portal200001 | 500 |
+| `/api/portalCore/v6/login` | portal200001 | 500 |
+| `/api/portalCore/v8/login` | portal200001 | 500 |
+| `/api/portalCore/v9/startPlayVOD` | portal200001 | 500 |
+| `/api/portalCore/v13_1/getSlbInfo` | portal200001 | 500 |
+| `/api/portalCore/config/get` | **500** (no check) | 500 |
+| `/api/portalCore/pwdCheck` | portal200001 | 500 |
+| `/api/portalCore/getAuthInfo` | portal200001 | 500 |
+| `/api/portalCore/getHome` | portal200001 | 500 |
 
-### 3.4 Esquema de versiones
-Hay DOS esquemas de versionCode:
-- **Esquema 6xxxxx**: versionName 6.x.x → versionCode 60201, 60504, 60505 (nuestras APKs)
-- **Esquema 434xx**: versionName 4.34.x → versionCode 43404 (encontrado en ANY.RUN sandbox, v4.34.4)
-- **Esquema 7xxxx**: versionName 7.1.0 → versionCode ~70100 (mencionado en sitios web)
+### Otros endpoints
+| Endpoint | Estado |
+|---|---|
+| `/api/v2/dcs/getAddr` | 400 Bad Request |
+| `/api/v1/crashtrack/upload` | vacío |
+| `/api/v1/mix/upload` | vacío |
+| `/api/v1/raw/upload` | vacío |
+| `/api/anti/updateZdata` | vacío |
+| `/api/crashsdk/validate` | vacío |
+| `/api/get_notice` | 500 (en yumao) |
+| `/api/adserver/v3/get_content` | 500 (en yumao) |
 
----
-
-## 4. NUEVA DIRECCIÓN RECOMENDADA
-
-### Opción A: Analizar Xup3rTV (RECOMENDADA)
-1. Descargar APK de Xup3rTV desde YouTube/installer links
-2. Analizar con nuestro xuper-apk-analyzer.py
-3. Probablemente usa un backend diferente o versión más nueva del mismo backend
-4. Si funciona, construir app propia basada en esa API
-
-### Opción B: Probar las variantes de Google Play
-1. Descargar APK de `my.app.appy.xupertv` desde APKPure
-2. Analizar versionCode y endpoints
-3. Puede usar un backend diferente al de com.msandroid.mobile
-
-### Opción C: MITM proxy con teléfono real
-1. Instalar la app funcional en un teléfono Android
-2. Configurar mitmproxy para interceptar tráfico
-3. Capturar headers, endpoints y respuestas reales
-4. Reproducir las peticiones exactas
-
-### Opción D: Construir app IPTV desde cero
-1. Usar listas M3U públicas (hay muchos repositorios)
-2. Construir un player IPTV propio (ExoPlayer/Video.js)
-3. No depender de APIs de terceros
+### yumao.puata.info (anti-fraud SDK - Taobao ACCS)
+| Endpoint | Estado |
+|---|---|
+| `/anti_logs` | Vivo - necesita appkey + GZIP body |
+| `/cc_info` | Vivo - necesita appkey + GZIP body |
 
 ---
 
-## 5. INFRAESTRUCTURA DE DOMINIOS (sin cambios)
-
-### Dominios API confirmados (detrás de Cloudflare)
-```
-c2tgd.izvhrdcjb.com    → portal200001 (servicio descontinuado)
-dtgrd.txhnojlbu.com    → portal200001
-cftpbe.39114gi1.com    → 403 Cloudflare block
-skvbv.hbcpdutka.com    → sin respuesta
-jktgk.bxtzwlyan.com    → sin respuesta
-mekdw.htvbox.club      → 404 Not Found
-```
-
-### Dominios *.puata.info (13 subdominios)
-```
-kexun.puata.info       → sin respuesta / timeout
-lvjian.puata.info      → sin respuesta
-zhipu.puata.info       → sin respuesta
-xingse.puata.info      → sin respuesta
-baoxian.puata.info     → sin respuesta
-zhubao.puata.info      → sin respuesta
-jiaoyu.puata.info      → sin respuesta
-meishi.puata.info      → sin respuesta
-chuanmei.puata.info    → sin respuesta
-youxuan.puata.info     → sin respuesta
-lvxing.puata.info      → sin respuesta
-dianying.puata.info    → sin respuesta
-yumao.puata.info       → HTTP 500 (servidor caído)
-```
-
-**CDN IP:** `223.109.148.179` (para puata.info)
-
----
-
-## 6. ENDPOINTS API COMPLETOS
-
-| Endpoint | Método | Estado actual |
-|---|---|---|
-| `/api/portalCore/v3/snToken` | POST | portal200001 |
-| `/api/portalCore/v3/getColumnContents` | POST | portal200001 |
-| `/api/portalCore/v3/getRecommends` | POST | portal200001 |
-| `/api/portalCore/v3/getShelveData` | POST | portal200001 |
-| `/api/portalCore/v5/getLiveData` | POST | portal200001 |
-| `/api/portalCore/v5/login/thirdpart` | POST | portal200001 |
-| `/api/portalCore/v6/active` | POST | portal200001 |
-| `/api/portalCore/v6/login` | POST | portal200001 |
-| `/api/portalCore/v8/login` | POST | portal200001 |
-| `/api/portalCore/v9/startPlayVOD` | POST | portal200001 |
-| `/api/portalCore/v13_1/getSlbInfo` | POST | portal200001 |
-| `/api/portalCore/config/get` | POST | **500 Internal Error** (no check versión) |
-| `/api/portalCore/pwdCheck` | POST | portal200001 |
-| `/api/portalCore/getAuthInfo` | POST | portal200001 |
-| `/api/portalCore/getHome` | POST | portal200001 |
-| `/api/v2/dcs/getAddr` | POST | 400 Bad Request |
-| `/api/v1/crashtrack/upload` | POST | vacío |
-| `/api/anti/updateZdata` | POST | vacío |
-| `/api/crashsdk/validate` | POST | vacío |
-
-### Headers que la app envía (del código DEX)
-```
-versionCode / apk_versioncode: <VERSION_CODE>
-platform: android
-Content-Type: application/json o application/x-www-form-urlencoded
-User-Agent: Dalvik/2.1.0 (Linux; U; Android 14)
-app-version-code: <VERSION_CODE>   (encontrado en ANY.RUN sandbox)
-art-version: 340090000             (encontrado en ANY.RUN sandbox)
-appId: 1
-channelId: default
-deviceId: <DEVICE_ID>
-```
-
----
-
-## 7. CREDENCIALES EXTRADAS
+## 6. CREDENCIALES Y CLAVES
 
 ### Cuenta del emulador
 ```json
@@ -224,14 +202,30 @@ deviceId: <DEVICE_ID>
 }
 ```
 
-### 3DES Encryption
-- Los valores de `host` en la app están encriptados con 3DES
-- La clave 3DES está en el código pero ofuscada por iJiami (爱加密) packing
-- El archivo `domain_test.json` en la APK tiene todos los valores como "xx" (se cargan en runtime)
+### Encriptación (EXTRAÍDA)
+```
+3DES Key (base64): 7JJ8qaJ2A4kJPEJBiMRtANnJ6OC7sPev
+3DES Key (hex):    ec927ca9a2760389093c424188c46d00d9c9e8e0bbb0f7af
+Algoritmo:         DESede/ECB/PKCS5Padding
+Clase Java:        javax.crypto.spec.DESedeKeySpec
+
+AES Key (base64):  7JJ8qaJ2A4kJPEJB  (posible IV o clave parcial)
+Algoritmos AES:    AES/CBC/NOPADDING, AES/ECB/PKCS5Padding
+
+NOTA: Los dominios en domain_test.json están como "xx" (se cargan dinámicamente).
+Los dominios reales están en resources.arsc en TEXTO PLANO, no encriptados.
+La clave 3DES probablemente se usa para desencriptar las respuestas del servidor
+o para encriptar datos enviados, NO para desencriptar dominios almacenados localmente.
+```
+
+### Google OAuth
+```
+Client ID: 18767524675-b07kvgssnv757te063qbqel15b48s0ig.apps.googleusercontent.com
+```
 
 ---
 
-## 8. HERRAMIENTAS DISPONIBLES
+## 7. HERRAMIENTAS Y APKs DISPONIBLES
 
 ### Scripts (`/home/z/my-project/download/xuper-tools/`)
 | Archivo | Propósito |
@@ -242,81 +236,97 @@ deviceId: <DEVICE_ID>
 | `generate_report.py` | Genera reporte PDF |
 | `generate-guide.js` | Genera guía instructiva |
 
-### APKs disponibles
-| Archivo | Ubicación |
-|---|---|
-| xuper_celular.apk (v6.2.1) | `/home/z/my-project/download/` |
-| Xupertv_latest_version.apk (v6.5.4) | `/home/z/my-project/upload/` |
-| descargar_Xuper_tv_6_5_5_ultima_version_celular.apk (v6.5.5) | `/home/z/my-project/upload/` |
-| xuper_base.apk | `/home/z/my-project/upload/` |
+### APKs en disco
+| Archivo | Ubicación | Nota |
+|---|---|---|
+| xuper_tv_v711.apk (v6.2.2) | `/home/z/my-project/download/` | SIN iJiami, DEX de 34.8 MB |
+| xuper_tv_2026_v2.apk (v4.34.4) | `/home/z/my-project/download/` | iJiami packed, shell APK |
 
 ---
 
-## 9. REPOSITORIO GITHUB
+## 8. FLUJO DE TRABAJO RECOMENDADO PARA LA PRÓXIMA SESIÓN
 
-**URL:** https://github.com/yecos/guar
-**Token:** Ver `git remote -v` — **DEBE ser revocado** en https://github.com/settings/tokens
+### ⚠️ El backend portalCore está MUERTO en TODAS las variantes analizadas
+
+### Opción A: MITM proxy con app funcional (RECOMENDADA)
+1. Instalar Xup3rTV o Xuper TV que FUNCIONE en un teléfono Android
+2. Configurar mitmproxy para interceptar tráfico
+3. Capturar headers, endpoints y respuestas reales
+4. La app funcional DEBE usar un backend diferente o actualizado
+5. Con los endpoints capturados, construir la app propia
+
+### Opción B: Analizar BrasilIPTV original
+1. Buscar y descargar `com.interactive.brasiliptv` APK
+2. Al ser la app base SIN iJiami, es más fácil de analizar
+3. Puede tener endpoints diferentes o actualizados
+
+### Opción C: Analizar Xuper TV Global
+1. Descargar `my.blacksparrow.tv.xupertv` de mi9.com
+2. Es una variante diferente (34.7 MB, actualizada Abril 2026)
+3. Puede usar un backend diferente
+
+### Opción D: Probar los dominios 404 sin version gate
+1. Los dominios `c2tgd3.ewzpuscyv.com`, `jktgr.ludgwoxhe.com`, `vtgrc.ncimxztfk.com` etc. NO tienen el check de versión
+2. Necesitan los endpoints correctos (no portalCore)
+3. Podrían ser microservicios diferentes (upgrade, epg, dcs, etc.)
+4. Probar rutas como `/api/upgrade/check`, `/api/epg/get`, `/api/dccore/get`
+
+### Opción E: Construir app IPTV desde cero
+1. Usar listas M3U públicas
+2. Construir player IPTV propio
+3. No depender de APIs de terceros
 
 ---
 
-## 10. FLUJO DE TRABAJO RECOMENDADO PARA LA PRÓXIMA SESIÓN
-
-### ⚠️ NO seguir intentando versionCodes - el servicio está descontinuado
-
-### En su lugar:
-1. **Descargar Xup3rTV APK** — Es el reemplazo activo
-   - Buscar enlaces en videos de YouTube recientes
-   - Probar thexupertv.co o xupertvz.com
-2. **Analizar Xup3rTV con nuestro analyzer** — Ver si usa el mismo backend o uno nuevo
-3. **Si usa el mismo backend**: Buscar cómo obtiene el versionCode correcto
-4. **Si usa backend nuevo**: Mapear los nuevos endpoints y construir la app
-5. **Alternativa**: Descargar la variante de Google Play (`my.app.appy.xupertv`) y analizarla
-6. **Alternativa MITM**: Usar un teléfono real con la app funcionando + mitmproxy
-7. **Revocar token de GitHub**
-
----
-
-## 11. LECCIONES APRENDIDAS
+## 9. LECCIONES APRENDIDAS (TODAS LAS SESIONES)
 
 - "版本已停止使用" significa SERVICIO DESCONTINUADO, no "version vieja"
-- El error portal200001 se devuelve para CUALQUIER versionCode (incluso sin header)
-- iJiami (爱加密) packing impide la extracción estática de dominios y claves 3DES
-- Los dominios están vacíos en domain_test.json ("xx") — se cargan dinámicamente en runtime
-- Los servidores detrás de Cloudflare no se pueden bypassear con IP directa
-- Xuper TV tiene múltiples variantes con diferentes packages y posiblemente diferentes backends
-- La app está siendo activamente bloqueada por Amazon y posiblemente por proveedores de ISP
+- El error portal200001 se devuelve para CUALQUIER versionCode
+- iJiami (爱加密) packing solo protege el código Java, los recursos están accesibles
+- Los dominios están en TEXTO PLANO en resources.arsc, NO encriptados
+- La clave 3DES se usa para datos en tránsito, no para dominios almacenados
+- La app original es BrasilIPTV (com.interactive.brasiliptv.app.AppWrapper)
+- Xuper TV, Magis TV y MGS TV son el mismo producto rebrandeado
+- yumao.puata.info NO tiene el version gate pero el backend crashea
+- Los dominios que devuelven 404 (no portal200001) son SERVIDORES DIFERENTES sin version check
+- Los servidores Spring Boot en Aliyun responden pero no tienen los endpoints portalCore
+- Google App Engine tiene un proyecto activo (magis-mobile-7abeb.appspot.com) pero devuelve 404 en todo
 
 ---
 
-## 12. COMANDOS ÚTILES
+## 10. COMANDOS ÚTILES
 
-### Analizar una APK nueva
-```bash
-python3 /home/z/my-project/download/xuper-tools/xuper-apk-analyzer.py APK.apk --update-monitor
-```
-
-### Extraer versionCode rápido (sin androguard, que es lento)
+### Descifrar datos con la clave 3DES
 ```python
-import zipfile, struct
-apk = 'APK.apk'
-with zipfile.ZipFile(apk, 'r') as z:
-    data = z.read('AndroidManifest.xml')
-for offset in range(0, 50000, 4):
-    val = struct.unpack('<I', data[offset:offset+4])[0]
-    if 60000 <= val <= 99999:
-        print(f'versionCode at offset {offset}: {val}')
+from Crypto.Cipher import DES3
+from Crypto.Util.Padding import unpad
+import base64
+
+key = base64.b64decode("7JJ8qaJ2A4kJPEJBiMRtANnJ6OC7sPev")
+cipher = DES3.new(key, DES3.MODE_ECB)
+encrypted = base64.b64decode("ENCRYPTED_DATA_HERE")
+decrypted = unpad(cipher.decrypt(encrypted), 8)
+print(decrypted.decode('utf-8'))
 ```
 
-### Probar API endpoint
+### Probar endpoint sin version gate
 ```bash
-curl -s -m 10 -X POST "https://DOMAIN/api/portalCore/v8/login" \
+curl -s -m 10 -X POST "https://yumao.puata.info/api/portalCore/config/get" \
   -H "Content-Type: application/json" \
-  -H "versionCode: 60505" \
+  -H "versionCode: 60202" \
   -H "platform: android" \
   -d '{"appId":"1"}'
 ```
 
-### Buscar en web información actualizada
+### Probar yumao anti-fraud endpoints
 ```bash
-z-ai function -n web_search -a '{"query": "Xuper TV latest version 2026 working", "num": 10}'
+curl -s -m 10 -X POST "https://yumao.puata.info/anti_logs" \
+  -H "Content-Type: application/json" \
+  -H "appkey: 68b903e0e563686f429a3a60" \
+  -d '{}'
+```
+
+### Buscar en web
+```bash
+z-ai function -n web_search -a '{"query": "Xuper TV working 2026", "num": 10}'
 ```
