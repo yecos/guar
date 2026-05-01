@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model DomainSnapshot {
+  id          String   @id @default(cuid())
+  domain      String
+  service     String
+  role        String
+  ipAddresses String
+  isUp        Boolean
+  responseMs  Int      @default(0)
+  checkedAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+model DCSResponse {
+  id          String   @id @default(cuid())
+  rawData     String
+  domainCount Int      @default(0)
+  changed     Boolean  @default(false)
+  diffSummary String?
+  fetchedAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+model Alert {
+  id          String   @id @default(cuid())
+  type        String
+  severity    String
+  title       String
+  description String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model MonitorConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}

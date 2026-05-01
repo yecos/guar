@@ -1,0 +1,44 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+
+# production
+build/
+
+# misc
+.DS_Store
+
+# debug logs
+npm-debug.log*
+
+# local env files
+.env*.local
+.env
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# database files
+prisma/monitor.db
+prisma/monitor.db-shm
+prisma/monitor.db-wal
+*.db.bak
+
+# backup files
+*.bak
+
+# skills (internal tooling)
+skills/
+
+# extracted APK data
+download/
+
+# worklog
+worklog.md
